@@ -7,6 +7,9 @@
 
 namespace Aurora\Modules\SeafileIntegrator;
 
+use GuzzleHttp\Client;
+use GuzzleHttp\Psr7\StreamWrapper;
+
 /**
  * Adds ability to work with S3 file storage inside Aurora Files module.
  *
@@ -75,22 +78,31 @@ class Module extends \Aurora\System\Module\AbstractModule
 			throw new \Aurora\System\Exceptions\ApiException(\Aurora\System\Notifications::InvalidInputParameter);
 		}
 
+		$client = new Client();
+	
 		$userUUID = \Aurora\System\Api::getUserUUIDById($UserId);
 		$result = [];
 		foreach ($Files as $file) {
 			$fileName = $file['Name'];
 			$downloadLink = $file['Link'];
 
-			// TODO: get stream from $downloadLink using $Headers
+			$res = $client->get($downloadLink, [
+				'headers' => $Headers
+			]);
+
 			$fileResource = null;
+			$size = 0;
+			if ($res->getStatusCode() === 200) {
+				$resource = $res->getBody();
+				$size = $resource->getSize();
+				$fileResource = StreamWrapper::getResource($resource);
+			}
 
 			// TODO: get some temp name
 			$tempName = md5($downloadLink . microtime(true).rand(1000, 9999));
 
-			if (is_resource($fileResource) && $this->getFilecacheManager()->putFile($userUUID, $tempName, $fileResource)) {
-				// TODO: get file size
-				$size = 0;
-
+			$oFilecacheManager = new \Aurora\System\Managers\Filecache();
+			if (is_resource($fileResource) && $oFilecacheManager->putFile($userUUID, $tempName, $fileResource)) {
 				$hash = \Aurora\System\Api::EncodeKeyValues(array(
 					'TempFile' => true,
 					'UserId' => $UserId,
@@ -112,7 +124,7 @@ class Module extends \Aurora\System\Module\AbstractModule
 					'TempName' => $tempName,
 					'Size' => $size,
 					'Hash' => $hash,
-					'MimeType' => MailSo\Base\Utils::MimeContentType($fileName),
+					'MimeType' => \MailSo\Base\Utils::MimeContentType($fileName),
 					'Actions' => $actions
 				];
 
