@@ -1,4 +1,4 @@
-<div class="item file" data-bind="css: { 'selected': selected() || checked() }">
+<div class="item file" data-bind="css: { 'selected': $parent.selectFilesMode() && (selected() || checked()) }">
 	<div class="item_content dragHandle">
 		<div class="image">
 			<!-- ko if: thumbnailSrc !== '' -->

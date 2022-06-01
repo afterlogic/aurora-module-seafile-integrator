@@ -1,7 +1,7 @@
 <div class="panel_center scroll-wrap" data-bind="customScrollbar: {x: false}">
 	<div class="scroll-inner" style="overflow: hidden scroll; margin-right: 0px;">
 		<div class="items_list">
-			<!-- ko foreach: storages -->
+			<!-- ko foreach: allowedStorages -->
 				<div class="item canSelect" data-bind="css: {'selected': name === $parent.selectedStorage()}">
 					<a href="javascript: void(0);" class="title"
 					   data-bind="click: function () { $parent.selectStorage(name); }"

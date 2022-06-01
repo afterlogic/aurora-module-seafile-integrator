@@ -31,6 +31,8 @@ function CSelectFilesPopup()
 {
 	CAbstractPopup.call(this);
 
+	this.selectFilesMode = ko.observable(false);
+
 	this.storages = [
 		{
 			label: TextUtils.i18n('%MODULENAME%/LABEL_MINE_STORAGE'),
@@ -43,9 +45,15 @@ function CSelectFilesPopup()
 			iconCssClass: 'typeshared'
 		}
 	];
+	this.allowedStorages = ko.computed(function () {
+		if (this.selectFilesMode()) {
+			return this.storages;
+		}
+		return this.storages.filter(storage => storage.name === 'mine');
+	}, this);
 	this.selectedStorage = ko.observable('');
 	this.selectedStorageLabel = ko.computed(function () {
-		const storage = this.storages.find(storage => storage.name === this.selectedStorage());
+		const storage = this.allowedStorages().find(storage => storage.name === this.selectedStorage());
 		return storage && storage.label || '';
 	}, this);
 
@@ -93,11 +101,9 @@ CSelectFilesPopup.prototype.onBind = function ($popupDom)
 	);
 };
 
-/**
- * @param {Function} callback
- */
-CSelectFilesPopup.prototype.onOpen = function (callback)
+CSelectFilesPopup.prototype.onOpen = function ({ selectFilesMode, callback })
 {
+	this.selectFilesMode(selectFilesMode);
 	this.callback = callback;
 
 	this.currentRepos([]);
@@ -107,7 +113,7 @@ CSelectFilesPopup.prototype.onOpen = function (callback)
 	this.currentDirName('');
 	this.currentParentDir('');
 
-	this.selectedStorage(this.storages[0].name);
+	this.selectedStorage(this.allowedStorages()[0].name);
 	this.loadingRepos(true);
 	SeafileApi.getRepos((result, request) => {
 		this.loadingRepos(false);
@@ -241,6 +247,11 @@ CSelectFilesPopup.prototype.selectFiles = function ()
 //	}
 //
 //	this.closePopup();
+};
+
+CSelectFilesPopup.prototype.saveAttachments = function ()
+{
+	console.log('saveAttachments');
 };
 
 module.exports = new CSelectFilesPopup();
