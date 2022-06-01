@@ -109,9 +109,8 @@ CSelectFilesPopup.prototype.onOpen = function (callback)
 
 	this.selectedStorage(this.storages[0].name);
 	this.loadingRepos(true);
-	SeafileApi.getRepos((response, request, status) => {
+	SeafileApi.getRepos((result, request) => {
 		this.loadingRepos(false);
-		const result = status === 200 && response && response.Result;
 		const parsedResult = result ? JSON.parse(result) : null;
 		const allRepos = parsedResult && parsedResult.repos;
 		if (Array.isArray(allRepos)) {
@@ -150,8 +149,7 @@ CSelectFilesPopup.prototype.showRepo = function (repoId)
 	this.loadingRepoDir(true);
 	this.currentDirName('');
 	this.currentParentDir('');
-	SeafileApi.getRepoDir({ repoId }, (response, request, status) => {
-		const result = status === 200 && response && response.Result;
+	SeafileApi.getRepoDir({ repoId }, (result, request) => {
 		const parsedResult = result ? JSON.parse(result) : null;
 		const allDirs = parsedResult && parsedResult.dirent_list;
 		if (Array.isArray(allDirs)) {
@@ -185,8 +183,7 @@ CSelectFilesPopup.prototype.showDir = function (dirName, parentDir)
 		dirName: dirName,
 		parentDir: parentDir
 	};
-	SeafileApi.getRepoDir(parameters, (response, request, status) => {
-		const result = status === 200 && response && response.Result;
+	SeafileApi.getRepoDir(parameters, (result, request) => {
 		const parsedResult = result ? JSON.parse(result) : null;
 		const allDirs = parsedResult && parsedResult.dirent_list;
 		if (Array.isArray(allDirs)) {
@@ -235,8 +232,8 @@ CSelectFilesPopup.prototype.selectFiles = function ()
 		repoId: this.selectedRepoId(),
 		files: this.selector.listCheckedAndSelected()
 	};
-	SeafileApi.getFilesForUpload(parameters, (response, request, status) => {
-		console.log({ response, request, status });
+	SeafileApi.getFilesForUpload(parameters, (result, request) => {
+		console.log({ result, request });
 	});
 //
 //	if (_.isFunction(this.callback)) {

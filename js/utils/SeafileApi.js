@@ -7,11 +7,14 @@ const
 	Types = require('%PathToCoreWebclientModule%/js/utils/Types.js'),
 
 	Ajax = require('%PathToCoreWebclientModule%/js/Ajax.js'),
+	Api = require('%PathToCoreWebclientModule%/js/Api.js'),
 
 	Settings = require('modules/%ModuleName%/js/Settings.js'),
 
 	sessionid = $.cookie('sessionid'),
-	cookieHeader = `Cookie: sessionid=${sessionid}`,
+	cookieHeaders = {
+		'Cookie': `sessionid=${sessionid}`
+	},
 
 	token = $.cookie('seahub_token'),
 	authorizationHeader = `Authorization: Token ${token}`
@@ -23,7 +26,13 @@ function curlExec(request, callback) {
 		Url: url,
 		Headers: [authorizationHeader]
 	};
-	Ajax.send('%ModuleName%', 'CurlExec', parameters, callback);
+	Ajax.send('%ModuleName%', 'CurlExec', parameters, (response, request, status) => {
+		const result = status === 200 && response && response.Result;
+		if (!result) {
+			Api.showErrorByCode(response);
+		}
+		callback(result, request);
+	});
 }
 
 module.exports = {
@@ -42,7 +51,7 @@ module.exports = {
 
 	getFilesForUpload: function ({ repoId, files }, callback) {
 		const parameters = {
-			Headers: [cookieHeader],
+			Headers: cookieHeaders,
 			Files: files.map(file => {
 				return {
 					Name: file.name,
@@ -50,6 +59,12 @@ module.exports = {
 				};
 			})
 		};
-		Ajax.send('%ModuleName%', 'GetFilesForUpload', parameters, callback);
+		Ajax.send('%ModuleName%', 'GetFilesForUpload', parameters, (response, request, status) => {
+			const result = status === 200 && response && response.Result;
+			if (!result) {
+				Api.showErrorByCode(response);
+			}
+			callback(result, request);
+		});
 	}
 };
