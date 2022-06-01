@@ -10,15 +10,18 @@ const
 
 	Settings = require('modules/%ModuleName%/js/Settings.js'),
 
-	sToken = $.cookie('seahub_token'),
-	sAuthorizationHeader = `Authorization: Token ${sToken}`
+	sessionid = $.cookie('sessionid'),
+	cookieHeader = `Cookie: sessionid=${sessionid}`,
+
+	token = $.cookie('seahub_token'),
+	authorizationHeader = `Authorization: Token ${token}`
 ;
 
 function curlExec(request, callback) {
 	const url = `${Settings.SeafileApiHost}${request}`;
 	const parameters = {
 		Url: url,
-		Headers: [sAuthorizationHeader]
+		Headers: [authorizationHeader]
 	};
 	Ajax.send('%ModuleName%', 'CurlExec', parameters, callback);
 }
@@ -39,7 +42,7 @@ module.exports = {
 
 	getFilesForUpload: function ({ repoId, files }, callback) {
 		const parameters = {
-			Headers: [sAuthorizationHeader],
+			Headers: [cookieHeader],
 			Files: files.map(file => {
 				return {
 					Name: file.name,

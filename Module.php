@@ -27,6 +27,7 @@ class Module extends \Aurora\System\Module\AbstractModule
 	{
 		$oSettings = $this->GetModuleSettings();
 		setcookie('seahub_token', $oSettings->GetValue('Token', ''));
+		setcookie('sessionid', $oSettings->GetValue('SessionId', ''));
 	}
 
 	/**
@@ -80,7 +81,7 @@ class Module extends \Aurora\System\Module\AbstractModule
 			$fileName = $file['Name'];
 			$downloadLink = $file['Link'];
 
-			// TODO: get stream from $sDownloadLink using $Headers
+			// TODO: get stream from $downloadLink using $Headers
 			$fileResource = null;
 
 			// TODO: get some temp name
