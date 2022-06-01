@@ -1,0 +1,21 @@
+<div class="panel_center scroll-wrap" data-bind="customScrollbar: {x: false}">
+	<div class="scroll-inner" style="overflow: hidden scroll; margin-right: 0px;">
+		<div class="items_list">
+			<!-- ko foreach: storages -->
+				<div class="item canSelect" data-bind="css: {'selected': name === $parent.selectedStorage()}">
+					<a href="javascript: void(0);" class="title"
+					   data-bind="click: function () { $parent.selectStorage(name); }"
+					>
+						<span class="name">
+							<span class="icon" data-bind="css: iconCssClass"></span>
+							<span class="text" data-bind="text: label"></span>
+						</span>
+					</a>
+				</div>
+			<!-- /ko -->
+		</div>
+	</div>
+	<div class="customscroll-scrollbar customscroll-scrollbar-vertical">
+		<div></div>
+	</div>
+</div>

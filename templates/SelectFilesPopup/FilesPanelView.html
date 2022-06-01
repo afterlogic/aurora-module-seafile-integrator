@@ -1,0 +1,57 @@
+<div class="panel_top pathway">
+	<b data-bind="visible: selectedRepoId() === '', text: selectedStorageLabel"></b>
+	<a href="javascript: void(0);" data-bind="visible: selectedRepoId() !== '',
+	   text: selectedStorageLabel, click: showAllRepos"
+	></a>
+	<!-- ko if: selectedRepoId() !== '' -->
+		»
+		<b data-bind="text: selectedRepoName, visible: currentDirName() === ''"></b>
+		<a href="javascript: void(0);"
+			  data-bind="text: selectedRepoName, visible: currentDirName() !== '',
+			  click: function () { showRepo(selectedRepoId()); }"
+		></a>
+	<!-- /ko -->
+	<!-- ko if: currentParentDirParts().length > 0 -->
+		<!-- ko foreach: currentParentDirParts -->
+			»
+			<a href="javascript: void(0);"
+				  data-bind="text: $data, click: function () { $parent.showParentDir($index(), $data); }"
+			></a>
+		<!-- /ko -->
+	<!-- /ko -->
+	<!-- ko if: currentDirName() !== '' -->
+		»
+		<b data-bind="text: currentDirName"></b>
+	<!-- /ko -->
+</div>
+<div class="panel_center unselectable" style="display: flex; overflow: hidden;"
+	 data-bind="splitterFlex: {name: 'files_list1', sizes: [50, 50]}">
+	<div id="files_center_panel" style="height: 100%; width: calc(50% - 0px); flex-grow: 1;"
+		 data-bind="customScrollbar: {x: false}" class="scroll-wrap"
+	>
+		<div class="files_scroll scroll-inner" style="overflow: hidden scroll; margin-right: 0px;">
+			<div class="items_list">
+				<span class="list_notification" data-bind="visible: loadingRepos() || loadingRepoDir()">
+					<span class="description" data-bind="i18n: {'key': 'COREWEBCLIENT/INFO_LOADING'}"></span>
+				</span>
+				<span class="list_notification" data-bind="visible: selectedRepoEmpty">
+					<span class="description" data-bind="i18n: {'key': '%MODULENAME%/INFO_EMPTY_DIRECTORY'}"></span>
+				</span>
+				<div class="items_sub_list item_list_table_view" data-bind="if: selectedRepoId() === ''">
+					<!-- ko foreach: currentRepos -->
+						<!-- ko template: {name: '%ModuleName%_SelectFilesPopup_RepoView'} --><!-- /ko -->
+					<!-- /ko -->
+					<div class="item helper"></div>
+				</div>
+				<div class="items_sub_list item_list_table_view" data-bind="if: selectedRepoId() !== ''">
+					<!-- ko foreach: folders -->
+						<!-- ko template: {name: '%ModuleName%_SelectFilesPopup_FolderView'} --><!-- /ko -->
+					<!-- /ko -->
+					<!-- ko foreach: files -->
+						<!-- ko template: {name: '%ModuleName%_SelectFilesPopup_FileView'} --><!-- /ko -->
+					<!-- /ko -->
+				</div>
+			</div>
+		</div>
+	</div>
+</div>

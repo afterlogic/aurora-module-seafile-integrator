@@ -1,0 +1,241 @@
+'use strict';
+
+const
+	_ = require('underscore'),
+	ko = require('knockout'),
+
+	TextUtils = require('%PathToCoreWebclientModule%/js/utils/Text.js'),
+	Utils = require('%PathToCoreWebclientModule%/js/utils/Common.js'),
+
+	CAbstractPopup = require('%PathToCoreWebclientModule%/js/popups/CAbstractPopup.js'),
+	CDateModel = require('%PathToCoreWebclientModule%/js/models/CDateModel.js'),
+	CSelector = require('%PathToCoreWebclientModule%/js/CSelector.js'),
+
+	SeafileApi = require('modules/%ModuleName%/js/utils/SeafileApi.js')
+;
+
+function parseLastModified (lastModified)
+{
+	const dateModel = new CDateModel();
+	if (lastModified) {
+		dateModel.parse(lastModified);
+		return dateModel.getShortDate();
+	}
+	return '';
+}
+
+/**
+ * @constructor
+ */
+function CSelectFilesPopup()
+{
+	CAbstractPopup.call(this);
+
+	this.storages = [
+		{
+			label: TextUtils.i18n('%MODULENAME%/LABEL_MINE_STORAGE'),
+			name: 'mine',
+			iconCssClass: 'typepersonal'
+		},
+		{
+			label: TextUtils.i18n('%MODULENAME%/LABEL_SHARED_STORAGE'),
+			name: 'shared',
+			iconCssClass: 'typeshared'
+		}
+	];
+	this.selectedStorage = ko.observable('');
+	this.selectedStorageLabel = ko.computed(function () {
+		const storage = this.storages.find(storage => storage.name === this.selectedStorage());
+		return storage && storage.label || '';
+	}, this);
+
+	this.loadingRepos = ko.observable(false);
+	this.mineRepos = [];
+	this.sharedRepos = [];
+	this.currentRepos = ko.observableArray([]);
+	this.selectedRepoId = ko.observable('');
+	this.selectedRepoName = ko.computed(function () {
+		const repo = this.currentRepos().find(repo => repo.repo_id === this.selectedRepoId());
+		return repo && repo.repo_name || '';
+	}, this);
+
+	this.loadingRepoDir = ko.observable(false);
+	this.folders = ko.observableArray([]);
+	this.files = ko.observableArray([]);
+	this.currentDirName = ko.observable('');
+	this.currentParentDir = ko.observable('');
+	this.currentParentDirParts = ko.computed(function () {
+		return this.currentParentDir().split('/').filter(part => part.length > 0);
+	}, this);
+
+	this.selectedRepoEmpty = ko.computed(function () {
+		return !this.loadingRepos() && !this.loadingRepoDir() && this.selectedRepoId() && this.folders().length === 0 && this.files().length === 0;
+	}, this);
+
+	this.selector = new CSelector(this.files, null, null, null, null, null, true, true, true);
+
+	this.callback = null;
+}
+
+_.extendOwn(CSelectFilesPopup.prototype, CAbstractPopup.prototype);
+
+CSelectFilesPopup.prototype.PopupTemplate = '%ModuleName%_SelectFilesPopup';
+
+CSelectFilesPopup.prototype.onBind = function ($popupDom)
+{
+	var $dom = this.$viewDom || $popupDom;
+	this.selector.initOnApplyBindings(
+		'.items_sub_list .item',
+		'.items_sub_list .selected.item',
+		'.items_sub_list .item .custom_checkbox',
+		$('.panel.files .items_list', $dom),
+		$('.panel.files .items_list .files_scroll.scroll-inner', $dom)
+	);
+};
+
+/**
+ * @param {Function} callback
+ */
+CSelectFilesPopup.prototype.onOpen = function (callback)
+{
+	this.callback = callback;
+	this.selectedStorage(this.storages[0].name);
+	this.loadingRepos(true);
+	SeafileApi.getRepos((response, request, status) => {
+		this.loadingRepos(false);
+		const result = status === 200 && response && response.Result;
+		const parsedResult = result ? JSON.parse(result) : null;
+		const allRepos = parsedResult && parsedResult.repos;
+		if (Array.isArray(allRepos)) {
+			this.mineRepos = allRepos.filter(repo => repo.type === 'mine');
+			this.sharedRepos = allRepos.filter(repo => repo.type === 'shared');
+			this.populateCurrentRepos();
+		}
+	});
+};
+
+CSelectFilesPopup.prototype.selectStorage = function (storageName)
+{
+	if (this.selectedStorage() === storageName) {
+		return;
+	}
+
+	this.selectedStorage(storageName);
+	this.populateCurrentRepos();
+	this.showRepo('');
+};
+
+CSelectFilesPopup.prototype.showAllRepos = function ()
+{
+	this.showRepo('');
+};
+
+CSelectFilesPopup.prototype.showRepo = function (repoId)
+{
+	this.selectedRepoId(repoId);
+	if (repoId === '') {
+		return;
+	}
+
+	this.folders([]);
+	this.files([]);
+	this.loadingRepoDir(true);
+	this.currentDirName('');
+	this.currentParentDir('');
+	SeafileApi.getRepoDir({ repoId }, (response, request, status) => {
+		const result = status === 200 && response && response.Result;
+		const parsedResult = result ? JSON.parse(result) : null;
+		const allDirs = parsedResult && parsedResult.dirent_list;
+		if (Array.isArray(allDirs)) {
+			this.loadingRepoDir(false);
+			this.folders(allDirs.filter(item => item.type === 'dir'));
+			const files = allDirs
+					.filter(item => item.type === 'file')
+					.map(file => {
+						file.thumbnailSrc = ''; // file.encoded_thumbnail_src;
+						file.extension = Utils.getFileExtension(file.name).toLowerCase();
+						file.friendlySize = file.size > 0 ? TextUtils.getFriendlySize(file.size) : '';
+						file.lastModified = parseLastModified(file.mtime);
+						file.checked = ko.observable(false);
+						file.selected = ko.observable(false);
+						return file;
+					});
+			this.files(files);
+		}
+	});
+};
+
+CSelectFilesPopup.prototype.showDir = function (dirName, parentDir)
+{
+	this.folders([]);
+	this.files([]);
+	this.loadingRepoDir(true);
+	this.currentDirName(dirName);
+	this.currentParentDir(parentDir);
+	const parameters = {
+		repoId: this.selectedRepoId(),
+		dirName: dirName,
+		parentDir: parentDir
+	};
+	SeafileApi.getRepoDir(parameters, (response, request, status) => {
+		const result = status === 200 && response && response.Result;
+		const parsedResult = result ? JSON.parse(result) : null;
+		const allDirs = parsedResult && parsedResult.dirent_list;
+		if (Array.isArray(allDirs)) {
+			this.loadingRepoDir(false);
+			this.folders(allDirs.filter(item => item.type === 'dir'));
+			const files = allDirs
+					.filter(item => item.type === 'file')
+					.map(file => {
+						file.thumbnailSrc = ''; // file.encoded_thumbnail_src;
+						file.extension = Utils.getFileExtension(file.name).toLowerCase();
+						file.friendlySize = file.size > 0 ? TextUtils.getFriendlySize(file.size) : '';
+						file.lastModified = parseLastModified(file.mtime);
+						return file;
+					});
+			this.files(files);
+		}
+	});
+};
+
+CSelectFilesPopup.prototype.showParentDir = function (index, dirName)
+{
+	let parentDir = '/';
+	if (index > 0) {
+		const parentDirParts = this.currentParentDirParts().slice(0, index);
+		parentDirParts.unshift('');
+		parentDirParts.push('');
+		parentDir = parentDirParts.join('/');
+	}
+	this.showDir(dirName, parentDir);
+};
+
+CSelectFilesPopup.prototype.populateCurrentRepos = function ()
+{
+	let currentRepos = [];
+	if (this.selectedStorage() === 'mine') {
+		currentRepos = this.mineRepos;
+	} else if (this.selectedStorage() === 'shared') {
+		currentRepos = this.sharedRepos;
+	}
+	this.currentRepos(currentRepos);
+};
+
+CSelectFilesPopup.prototype.selectFiles = function ()
+{
+	const parameters = {
+		repoId: this.selectedRepoId(),
+		files: this.selector.listCheckedAndSelected()
+	};
+	SeafileApi.getFilesForUpload(parameters, (response, request, status) => {
+		console.log({ response, request, status });
+	});
+//
+//	if (_.isFunction(this.callback)) {
+//		this.callback(selectedFiles);
+//	}
+//
+//	this.closePopup();
+};
+
+module.exports = new CSelectFilesPopup();

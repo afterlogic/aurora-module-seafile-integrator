@@ -1,0 +1,20 @@
+<div class="item file" data-bind="css: { 'selected': selected() || checked() }">
+	<div class="item_content dragHandle">
+		<div class="image">
+			<!-- ko if: thumbnailSrc !== '' -->
+			<img data-bind="attr: {'src': thumbnailSrc}" />
+			<!-- /ko -->
+			<!-- ko if: thumbnailSrc === '' -->
+			<span class="icon" data-bind="css: extension"></span>
+			<!-- /ko -->
+		</div>
+		<div class="name">
+			<div data-bind="text: name"></div>
+			<div class="data" >
+				<span data-bind="text: friendlySize"></span>
+				|
+				<span data-bind="text: lastModified"></span>
+			</div>
+		</div>
+	</div>
+</div>

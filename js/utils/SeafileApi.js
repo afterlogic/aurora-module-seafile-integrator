@@ -1,0 +1,52 @@
+'use strict';
+
+const
+	_ = require('underscore'),
+	$ = require('jquery'),
+
+	Types = require('%PathToCoreWebclientModule%/js/utils/Types.js'),
+
+	Ajax = require('%PathToCoreWebclientModule%/js/Ajax.js'),
+
+	Settings = require('modules/%ModuleName%/js/Settings.js'),
+
+	sToken = $.cookie('seahub_token'),
+	sAuthorizationHeader = `Authorization: Token ${sToken}`
+;
+
+function curlExec(request, callback) {
+	const url = `${Settings.SeafileApiHost}${request}`;
+	const parameters = {
+		Url: url,
+		Headers: [sAuthorizationHeader]
+	};
+	Ajax.send('%ModuleName%', 'CurlExec', parameters, callback);
+}
+
+module.exports = {
+	getRepos: function (callback) {
+		curlExec('repos', callback);
+	},
+
+	getRepoDir: function ({ repoId, dirName = '', parentDir = '' }, callback) {
+		if (dirName) {
+			const p = encodeURI(`${parentDir}${dirName}`);
+			curlExec(`repos/${repoId}/dir?p=${p}&with_thumbnail=true`, callback);
+		} else {
+			curlExec(`repos/${repoId}/dir?with_thumbnail=true`, callback);
+		}
+	},
+
+	getFilesForUpload: function ({ repoId, files }, callback) {
+		const parameters = {
+			Headers: [sAuthorizationHeader],
+			Files: files.map(file => {
+				return {
+					Name: file.name,
+					Link: `${Settings.SeafileHost}lib/${repoId}/file${file.parent_dir}${file.name}?dl=1`
+				};
+			})
+		};
+		Ajax.send('%ModuleName%', 'GetFilesForUpload', parameters, callback);
+	}
+};
