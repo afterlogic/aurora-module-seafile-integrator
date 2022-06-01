@@ -99,6 +99,14 @@ CSelectFilesPopup.prototype.onBind = function ($popupDom)
 CSelectFilesPopup.prototype.onOpen = function (callback)
 {
 	this.callback = callback;
+
+	this.currentRepos([]);
+	this.selectedRepoId('');
+	this.folders([]);
+	this.files([]);
+	this.currentDirName('');
+	this.currentParentDir('');
+
 	this.selectedStorage(this.storages[0].name);
 	this.loadingRepos(true);
 	SeafileApi.getRepos((response, request, status) => {
