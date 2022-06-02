@@ -55,16 +55,13 @@ module.exports = {
 			Files: files.map(file => {
 				return {
 					Name: file.name,
+					Hash: file.id,
 					Link: `${Settings.SeafileHost}lib/${repoId}/file${file.parent_dir}${file.name}?dl=1`
 				};
 			})
 		};
 		Ajax.send('%ModuleName%', 'GetFilesForUpload', parameters, (response, request, status) => {
-			const result = status === 200 && response && response.Result;
-			if (!result) {
-				Api.showErrorByCode(response);
-			}
-			callback(result, request);
+			callback(response, request);
 		});
 	}
 };

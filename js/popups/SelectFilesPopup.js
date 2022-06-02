@@ -80,7 +80,7 @@ function CSelectFilesPopup()
 		return !this.loadingRepos() && !this.loadingRepoDir() && this.selectedRepoId() && this.folders().length === 0 && this.files().length === 0;
 	}, this);
 
-	this.selector = new CSelector(this.files, null, null, null, null, null, true, true, true);
+	this.selector = new CSelector(this.files, null, null, this.selectFiles.bind(this), null, null, true, true, true);
 
 	this.callback = null;
 }
@@ -234,19 +234,11 @@ CSelectFilesPopup.prototype.populateCurrentRepos = function ()
 
 CSelectFilesPopup.prototype.selectFiles = function ()
 {
-	const parameters = {
-		repoId: this.selectedRepoId(),
-		files: this.selector.listCheckedAndSelected()
-	};
-	SeafileApi.getFilesForUpload(parameters, (result, request) => {
-		console.log({ result, request });
-	});
-//
-//	if (_.isFunction(this.callback)) {
-//		this.callback(selectedFiles);
-//	}
-//
-//	this.closePopup();
+	if (_.isFunction(this.callback)) {
+		this.callback(this.selectedRepoId(), this.selector.listCheckedAndSelected());
+	}
+
+	this.closePopup();
 };
 
 CSelectFilesPopup.prototype.saveAttachments = function ()

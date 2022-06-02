@@ -11,7 +11,7 @@ use GuzzleHttp\Client;
 use GuzzleHttp\Psr7\StreamWrapper;
 
 /**
- * Adds ability to work with S3 file storage inside Aurora Files module.
+ * Adds ability to work with Seafile storage inside Aurora Mail module.
  *
  * @license https://www.gnu.org/licenses/agpl-3.0.html AGPL-3.0
  * @license https://afterlogic.com/products/common-licensing Afterlogic Software License
@@ -50,6 +50,8 @@ class Module extends \Aurora\System\Module\AbstractModule
 
 	public function CurlExec($Url, $Headers)
 	{
+		\Aurora\System\Api::checkUserRoleIsAtLeast(\Aurora\System\Enums\UserRole::NormalUser);
+
 		$curl = curl_init();
 
 		curl_setopt_array($curl, array(
@@ -79,11 +81,12 @@ class Module extends \Aurora\System\Module\AbstractModule
 		}
 
 		$client = new Client();
-	
+
 		$userUUID = \Aurora\System\Api::getUserUUIDById($UserId);
 		$result = [];
 		foreach ($Files as $file) {
 			$fileName = $file['Name'];
+			$fileHash = $file['Hash'];
 			$downloadLink = $file['Link'];
 
 			$res = $client->get($downloadLink, [
@@ -98,12 +101,11 @@ class Module extends \Aurora\System\Module\AbstractModule
 				$fileResource = StreamWrapper::getResource($resource);
 			}
 
-			// TODO: get some temp name
 			$tempName = md5($downloadLink . microtime(true).rand(1000, 9999));
 
 			$oFilecacheManager = new \Aurora\System\Managers\Filecache();
 			if (is_resource($fileResource) && $oFilecacheManager->putFile($userUUID, $tempName, $fileResource)) {
-				$hash = \Aurora\System\Api::EncodeKeyValues(array(
+				$newFileHash = \Aurora\System\Api::EncodeKeyValues(array(
 					'TempFile' => true,
 					'UserId' => $UserId,
 					'Name' => $fileName,
@@ -112,10 +114,10 @@ class Module extends \Aurora\System\Module\AbstractModule
 
 				$actions = [
 					'view' => [
-						'url' => '?file-cache/' . $hash .'/view'
+						'url' => '?file-cache/' . $newFileHash .'/view'
 					],
 					'download' => [
-						'url' => '?file-cache/' . $hash
+						'url' => '?file-cache/' . $newFileHash
 					],
 				];
 
@@ -123,7 +125,8 @@ class Module extends \Aurora\System\Module\AbstractModule
 					'Name' => $fileName,
 					'TempName' => $tempName,
 					'Size' => $size,
-					'Hash' => $hash,
+					'Hash' => $fileHash,
+					'NewHash' => $newFileHash,
 					'MimeType' => \MailSo\Base\Utils::MimeContentType($fileName),
 					'Actions' => $actions
 				];
