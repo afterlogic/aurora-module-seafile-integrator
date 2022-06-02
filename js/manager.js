@@ -20,14 +20,15 @@ module.exports = function (oAppData) {
 
 					fAddAllAttachmentsDownloadMethod({
 						'Text': TextUtils.i18n('%MODULENAME%/ACTION_SAVE_ATTACHMENTS_TO_SEAFILE'),
-						'Handler': function (iAccountId, aHashes) {
+						'Handler': function (accountId, hashes) {
 							const
 								Popups = require('%PathToCoreWebclientModule%/js/Popups.js'),
+								SeafileApi = require('modules/%ModuleName%/js/utils/SeafileApi.js'),
 								SelectFilesPopup = require('modules/%ModuleName%/js/popups/SelectFilesPopup.js'),
 								popupParams = {
 									selectFilesMode: false,
-									callback: (selectedFiles) => {
-										console.log(selectedFiles);
+									callback: (repoId, dirName) => {
+										SeafileApi.saveToSeafile({ accountId, hashes, repoId, dirName });
 									}
 								}
 							;

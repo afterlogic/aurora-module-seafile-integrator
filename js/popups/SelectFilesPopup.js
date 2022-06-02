@@ -11,7 +11,8 @@ const
 	CDateModel = require('%PathToCoreWebclientModule%/js/models/CDateModel.js'),
 	CSelector = require('%PathToCoreWebclientModule%/js/CSelector.js'),
 
-	SeafileApi = require('modules/%ModuleName%/js/utils/SeafileApi.js')
+	SeafileApi = require('modules/%ModuleName%/js/utils/SeafileApi.js'),
+	Settings = require('modules/%ModuleName%/js/Settings.js')
 ;
 
 function parseLastModified (lastModified)
@@ -24,6 +25,13 @@ function parseLastModified (lastModified)
 	return '';
 }
 
+function getThumbnailSrc(thumbnailSrc)
+{
+//	if (thumbnailSrc) {
+//		return `${Settings.SeafileHost}${thumbnailSrc}`;
+//	}
+	return '';
+}
 /**
  * @constructor
  */
@@ -82,6 +90,11 @@ function CSelectFilesPopup()
 
 	this.selector = new CSelector(this.files, null, null, this.selectFiles.bind(this), null, null, true, true, true);
 
+	this.isEnableSaving = ko.computed(function () {
+		return this.selectedRepoId() !== '';
+	}, this);
+	this.saveAttachmentsCommand = Utils.createCommand(this, this.saveAttachments, this.isEnableSaving);
+
 	this.callback = null;
 }
 
@@ -115,9 +128,8 @@ CSelectFilesPopup.prototype.onOpen = function ({ selectFilesMode, callback })
 
 	this.selectedStorage(this.allowedStorages()[0].name);
 	this.loadingRepos(true);
-	SeafileApi.getRepos((result, request) => {
+	SeafileApi.getRepos((parsedResult, request) => {
 		this.loadingRepos(false);
-		const parsedResult = result ? JSON.parse(result) : null;
 		const allRepos = parsedResult && parsedResult.repos;
 		if (Array.isArray(allRepos)) {
 			this.mineRepos = allRepos.filter(repo => repo.type === 'mine');
@@ -150,13 +162,27 @@ CSelectFilesPopup.prototype.showRepo = function (repoId)
 		return;
 	}
 
+	this.getRepoDir();
+};
+
+CSelectFilesPopup.prototype.showDir = function (dirName, parentDir)
+{
+	this.getRepoDir(dirName, parentDir);
+};
+
+CSelectFilesPopup.prototype.getRepoDir = function (dirName = '', parentDir = '')
+{
+	this.currentDirName(dirName);
+	this.currentParentDir(parentDir);
 	this.folders([]);
 	this.files([]);
 	this.loadingRepoDir(true);
-	this.currentDirName('');
-	this.currentParentDir('');
-	SeafileApi.getRepoDir({ repoId }, (result, request) => {
-		const parsedResult = result ? JSON.parse(result) : null;
+	const parameters = {
+		repoId: this.selectedRepoId(),
+		dirName,
+		parentDir
+	};
+	SeafileApi.getRepoDir(parameters, (parsedResult, request) => {
 		const allDirs = parsedResult && parsedResult.dirent_list;
 		if (Array.isArray(allDirs)) {
 			this.loadingRepoDir(false);
@@ -164,44 +190,12 @@ CSelectFilesPopup.prototype.showRepo = function (repoId)
 			const files = allDirs
 					.filter(item => item.type === 'file')
 					.map(file => {
-						file.thumbnailSrc = ''; // file.encoded_thumbnail_src;
+						file.thumbnailSrc = getThumbnailSrc(file.encoded_thumbnail_src);
 						file.extension = Utils.getFileExtension(file.name).toLowerCase();
 						file.friendlySize = file.size > 0 ? TextUtils.getFriendlySize(file.size) : '';
 						file.lastModified = parseLastModified(file.mtime);
 						file.checked = ko.observable(false);
 						file.selected = ko.observable(false);
-						return file;
-					});
-			this.files(files);
-		}
-	});
-};
-
-CSelectFilesPopup.prototype.showDir = function (dirName, parentDir)
-{
-	this.folders([]);
-	this.files([]);
-	this.loadingRepoDir(true);
-	this.currentDirName(dirName);
-	this.currentParentDir(parentDir);
-	const parameters = {
-		repoId: this.selectedRepoId(),
-		dirName: dirName,
-		parentDir: parentDir
-	};
-	SeafileApi.getRepoDir(parameters, (result, request) => {
-		const parsedResult = result ? JSON.parse(result) : null;
-		const allDirs = parsedResult && parsedResult.dirent_list;
-		if (Array.isArray(allDirs)) {
-			this.loadingRepoDir(false);
-			this.folders(allDirs.filter(item => item.type === 'dir'));
-			const files = allDirs
-					.filter(item => item.type === 'file')
-					.map(file => {
-						file.thumbnailSrc = ''; // file.encoded_thumbnail_src;
-						file.extension = Utils.getFileExtension(file.name).toLowerCase();
-						file.friendlySize = file.size > 0 ? TextUtils.getFriendlySize(file.size) : '';
-						file.lastModified = parseLastModified(file.mtime);
 						return file;
 					});
 			this.files(files);
@@ -243,7 +237,11 @@ CSelectFilesPopup.prototype.selectFiles = function ()
 
 CSelectFilesPopup.prototype.saveAttachments = function ()
 {
-	console.log('saveAttachments');
+	if (_.isFunction(this.callback)) {
+		this.callback(this.selectedRepoId(), this.currentParentDir() || '/');
+	}
+
+	this.closePopup();
 };
 
 module.exports = new CSelectFilesPopup();

@@ -48,7 +48,7 @@ CUploadButtonOnComposeView.prototype.uploadSeafiles = function(repoId, files)
 	}
 
 	const parameters = { repoId, files };
-	SeafileApi.getFilesForUpload(parameters, (response, request) => {
+	SeafileApi.saveSeafilesAsTempfiles(parameters, (response, request) => {
 		this.composeOnFilesUpload(response, request);
 	});
 

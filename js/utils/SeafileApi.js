@@ -4,10 +4,12 @@ const
 	_ = require('underscore'),
 	$ = require('jquery'),
 
+	TextUtils = require('%PathToCoreWebclientModule%/js/utils/Text.js'),
 	Types = require('%PathToCoreWebclientModule%/js/utils/Types.js'),
 
 	Ajax = require('%PathToCoreWebclientModule%/js/Ajax.js'),
 	Api = require('%PathToCoreWebclientModule%/js/Api.js'),
+	Screens = require('%PathToCoreWebclientModule%/js/Screens.js'),
 
 	Settings = require('modules/%ModuleName%/js/Settings.js'),
 
@@ -17,39 +19,43 @@ const
 	},
 
 	token = $.cookie('seahub_token'),
-	authorizationHeader = `Authorization: Token ${token}`
+	authorizationHeaders = {
+		'Authorization': `Token ${token}`
+	}
 ;
 
-function curlExec(request, callback) {
-	const url = `${Settings.SeafileApiHost}${request}`;
+function getSeafileResponse(url, callback) {
 	const parameters = {
 		Url: url,
-		Headers: [authorizationHeader]
+		Headers: authorizationHeaders
 	};
-	Ajax.send('%ModuleName%', 'CurlExec', parameters, (response, request, status) => {
-		const result = status === 200 && response && response.Result;
-		if (!result) {
+	Ajax.send('%ModuleName%', 'GetSeafileResponse', parameters, (response, request, status) => {
+		const
+			result = status === 200 && response && response.Result,
+			parsedResult = result ? JSON.parse(result) : null
+		;
+		if (!parsedResult) {
 			Api.showErrorByCode(response);
 		}
-		callback(result, request);
+		callback(parsedResult, request);
 	});
 }
 
 module.exports = {
 	getRepos: function (callback) {
-		curlExec('repos', callback);
+		getSeafileResponse(`${Settings.SeafileApiHost}repos`, callback);
 	},
 
 	getRepoDir: function ({ repoId, dirName = '', parentDir = '' }, callback) {
 		if (dirName) {
 			const p = encodeURI(`${parentDir}${dirName}`);
-			curlExec(`repos/${repoId}/dir?p=${p}&with_thumbnail=true`, callback);
+			getSeafileResponse(`${Settings.SeafileApiHost}repos/${repoId}/dir?p=${p}&with_thumbnail=true`, callback);
 		} else {
-			curlExec(`repos/${repoId}/dir?with_thumbnail=true`, callback);
+			getSeafileResponse(`${Settings.SeafileApiHost}repos/${repoId}/dir?with_thumbnail=true`, callback);
 		}
 	},
 
-	getFilesForUpload: function ({ repoId, files }, callback) {
+	saveSeafilesAsTempfiles: function ({ repoId, files }, callback) {
 		const parameters = {
 			Headers: cookieHeaders,
 			Files: files.map(file => {
@@ -60,8 +66,32 @@ module.exports = {
 				};
 			})
 		};
-		Ajax.send('%ModuleName%', 'GetFilesForUpload', parameters, (response, request, status) => {
+		Ajax.send('%ModuleName%', 'SaveSeafilesAsTempfiles', parameters, (response, request, status) => {
 			callback(response, request);
+		});
+	},
+
+	saveToSeafile: function ({ accountId, hashes, repoId, dirName }) {
+		const
+			p = encodeURI(dirName),
+			url = `${Settings.SeafileHost}api2/repos/${repoId}/upload-link/?p=${p}`
+		;
+		getSeafileResponse(url, (parsedResult, request) => {
+			Screens.showLoading(TextUtils.i18n('COREWEBCLIENT/INFO_LOADING'));
+			const parameters = {
+				AccountID: accountId,
+				Attachments: hashes,
+				UploadLink: `${parsedResult}?ret-json=1`,
+				Headers: authorizationHeaders
+			};
+			Ajax.send('%ModuleName%', 'SaveAttachmentsToSeafile', parameters, function (response) {
+				Screens.hideLoading();
+				if (response.Result) {
+					Screens.showReport(TextUtils.i18n('%MODULENAME%/INFO_ATTACHMENTS_SAVED_SUCCESSFULLY'));
+				} else {
+					Api.showErrorByCode(response);
+				}
+			});
 		});
 	}
 };

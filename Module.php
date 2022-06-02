@@ -48,31 +48,62 @@ class Module extends \Aurora\System\Module\AbstractModule
 		];
 	}
 
-	public function CurlExec($Url, $Headers)
+	public function GetSeafileResponse($Url, $Headers)
 	{
 		\Aurora\System\Api::checkUserRoleIsAtLeast(\Aurora\System\Enums\UserRole::NormalUser);
 
-		$curl = curl_init();
+		$client = new Client();
 
-		curl_setopt_array($curl, array(
-			CURLOPT_URL => $Url,
-			CURLOPT_RETURNTRANSFER => true,
-			CURLOPT_ENCODING => '',
-			CURLOPT_MAXREDIRS => 10,
-			CURLOPT_TIMEOUT => 0,
-			CURLOPT_FOLLOWLOCATION => true,
-			CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
-			CURLOPT_CUSTOMREQUEST => 'GET',
-			CURLOPT_HTTPHEADER => $Headers,
-		));
-
-		$response = curl_exec($curl);
-		curl_close($curl);
-
-		return $response;
+		$res = $client->get($Url, [
+			'headers' => $Headers
+		]);
+		if ($res->getStatusCode() === 200) {
+			$resource = $res->getBody();
+			return $resource->read($resource->getSize());
+		}
+		return '';
 	}
 
-	public function GetFilesForUpload($UserId, $Files, $Headers)
+	public function SaveAttachmentsToSeafile($UserId, $AccountID, $Attachments, $UploadLink, $Headers)
+	{
+		$mailModuleDecorator = \Aurora\Modules\Mail\Module::Decorator();
+		if (!$mailModuleDecorator) {
+			return false;
+		}
+
+		$tempFiles = $mailModuleDecorator->SaveAttachmentsAsTempFiles($AccountID, $Attachments);
+		if (!is_array($tempFiles)) {
+			return false;
+		}
+
+		$userUUID = \Aurora\System\Api::getUserUUIDById($UserId);
+		$res = false;
+		foreach ($tempFiles as $tempName => $encodedData) {
+			$data = \Aurora\System\Api::DecodeKeyValues($encodedData);
+			if (!is_array($data) || !isset($data['FileName'])) {
+				continue;
+			}
+
+			$fileName = (string) $data['FileName'];
+			$filecacheManager = new \Aurora\System\Managers\Filecache();
+			$resource = $filecacheManager->getFile($userUUID, $tempName);
+			if (!$resource) {
+				continue;
+			}
+
+			$client = new Client();
+			$body = [];
+			$body[$fileName] = $resource;
+			$res = $client->post($UploadLink, [
+				'headers' => $Headers,
+				'form_params' => $body,
+			]);
+		}
+
+		return $res;
+	}
+
+	public function SaveSeafilesAsTempfiles($UserId, $Files, $Headers)
 	{
 		\Aurora\System\Api::checkUserRoleIsAtLeast(\Aurora\System\Enums\UserRole::NormalUser);
 
@@ -103,8 +134,8 @@ class Module extends \Aurora\System\Module\AbstractModule
 
 			$tempName = md5($downloadLink . microtime(true).rand(1000, 9999));
 
-			$oFilecacheManager = new \Aurora\System\Managers\Filecache();
-			if (is_resource($fileResource) && $oFilecacheManager->putFile($userUUID, $tempName, $fileResource)) {
+			$filecacheManager = new \Aurora\System\Managers\Filecache();
+			if (is_resource($fileResource) && $filecacheManager->putFile($userUUID, $tempName, $fileResource)) {
 				$newFileHash = \Aurora\System\Api::EncodeKeyValues(array(
 					'TempFile' => true,
 					'UserId' => $UserId,
