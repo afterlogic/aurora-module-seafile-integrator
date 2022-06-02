@@ -55,6 +55,11 @@ module.exports = {
 		}
 	},
 
+	createDir: function ({ repoId, dirName, parentDir }, callback) {
+		const p = encodeURI(`${parentDir}${dirName}`);
+		getSeafileResponse(`${Settings.SeafileHost}api2/repos/${repoId}/dir?p=${p}`, callback);
+	},
+
 	saveSeafilesAsTempfiles: function ({ repoId, files }, callback) {
 		const parameters = {
 			Headers: cookieHeaders,

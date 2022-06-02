@@ -10,7 +10,9 @@ const
 	CAbstractPopup = require('%PathToCoreWebclientModule%/js/popups/CAbstractPopup.js'),
 	CDateModel = require('%PathToCoreWebclientModule%/js/models/CDateModel.js'),
 	CSelector = require('%PathToCoreWebclientModule%/js/CSelector.js'),
+	Popups = require('%PathToCoreWebclientModule%/js/Popups.js'),
 
+	CreateFolderPopup = require('modules/%ModuleName%/js/popups/CreateFolderPopup.js'),
 	SeafileApi = require('modules/%ModuleName%/js/utils/SeafileApi.js'),
 	Settings = require('modules/%ModuleName%/js/Settings.js')
 ;
@@ -233,6 +235,12 @@ CSelectFilesPopup.prototype.selectFiles = function ()
 	}
 
 	this.closePopup();
+};
+
+CSelectFilesPopup.prototype.createFolder = function ()
+{
+	const callback = function () {};
+	Popups.showPopup(CreateFolderPopup, [this.selectedRepoId(), this.currentParentDir(), callback]);
 };
 
 CSelectFilesPopup.prototype.saveAttachments = function ()
