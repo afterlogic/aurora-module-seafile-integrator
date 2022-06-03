@@ -33,11 +33,12 @@ function getSeafileResponse(url, callback, postData = false) {
 		parameters.PostData = postData;
 	}
 	Ajax.send('%ModuleName%', 'GetSeafileResponse', parameters, (response, request, status) => {
-		const
-			result = status === 200 && response && response.Result,
-			parsedResult = result ? JSON.parse(result) : null
-		;
-		if (!parsedResult) {
+		const result = status === 200 && response && response.Result;
+		let parsedResult = result ? JSON.parse(result) : result;
+		if (parsedResult && parsedResult.error_msg) {
+			Screens.showError(parsedResult.error_msg);
+			parsedResult = null;
+		} else if (!parsedResult && typeof parsedResult !== 'string') {
 			Api.showErrorByCode(response);
 		}
 		callback(parsedResult, request);
@@ -61,6 +62,14 @@ module.exports = {
 	createDir: function ({ repoId, dirName, parentDir }, callback) {
 		const p = encodeURI(`${parentDir}${dirName}`);
 		getSeafileResponse(`${Settings.SeafileHost}api2/repos/${repoId}/dir/?p=${p}`, callback, { operation: 'mkdir' });
+	},
+
+	getRepoData: function ({ repoId }, callback) {
+		getSeafileResponse(`${Settings.SeafileApiHost}repos/${repoId}/`, callback);
+	},
+
+	applyPassword: function ({ repoId, password }, callback) {
+		getSeafileResponse(`${Settings.SeafileHost}api2/repos/${repoId}/`, callback, { password });
 	},
 
 	saveSeafilesAsTempfiles: function ({ repoId, files }, callback) {

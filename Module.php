@@ -29,8 +29,14 @@ class Module extends \Aurora\System\Module\AbstractModule
 	public function init()
 	{
 		$oSettings = $this->GetModuleSettings();
-		setcookie('seahub_token', $oSettings->GetValue('Token', ''));
-		setcookie('sessionid', $oSettings->GetValue('SessionId', ''));
+		$token = $oSettings->GetValue('Token', '');
+		if (!empty($token)) {
+			setcookie('seahub_token', $token);
+		}
+		$sessionid = $oSettings->GetValue('SessionId', '');
+		if (!empty($sessionid)) {
+			setcookie('sessionid', $sessionid);
+		}
 	}
 
 	/**
@@ -62,18 +68,26 @@ class Module extends \Aurora\System\Module\AbstractModule
 					'contents' => $value,
 				];
 			}
-			$res = $client->post($Url, [
-				'headers' => $Headers,
-				'multipart' => $multipart,
-			]);
-			$isStatusSuccess = $res->getStatusCode() === 201;
+			try {
+				$res = $client->post($Url, [
+					'headers' => $Headers,
+					'multipart' => $multipart,
+				]);
+			} catch (\Exception $e) {
+				$response = $e->getResponse();
+				return $response->getBody()->getContents();
+			}
 		} else {
-			$res = $client->get($Url, [
-				'headers' => $Headers,
-			]);
-			$isStatusSuccess = $res->getStatusCode() === 200;
+			try {
+				$res = $client->get($Url, [
+					'headers' => $Headers,
+				]);
+			} catch (\Exception $e) {
+				$response = $e->getResponse();
+				return $response->getBody()->getContents();
+			}
 		}
-		if ($isStatusSuccess) {
+		if ($res->getStatusCode() === 200 || $res->getStatusCode() === 201) {
 			$resource = $res->getBody();
 			return $resource->read($resource->getSize());
 		}
