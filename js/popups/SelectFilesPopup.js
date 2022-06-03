@@ -246,7 +246,8 @@ CSelectFilesPopup.prototype.createFolder = function ()
 CSelectFilesPopup.prototype.saveAttachments = function ()
 {
 	if (_.isFunction(this.callback)) {
-		this.callback(this.selectedRepoId(), this.currentParentDir() || '/');
+		const dirName = `${this.currentParentDir()}${this.currentDirName()}/`;
+		this.callback(this.selectedRepoId(), dirName || '/');
 	}
 
 	this.closePopup();

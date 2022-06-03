@@ -87,7 +87,8 @@ module.exports = {
 				AccountID: accountId,
 				Attachments: hashes,
 				UploadLink: `${parsedResult}?ret-json=1`,
-				Headers: authorizationHeaders
+				Headers: authorizationHeaders,
+				ParentDir: dirName
 			};
 			Ajax.send('%ModuleName%', 'SaveAttachmentsToSeafile', parameters, function (response) {
 				Screens.hideLoading();
