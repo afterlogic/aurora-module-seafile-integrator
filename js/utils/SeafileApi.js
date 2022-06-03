@@ -42,15 +42,15 @@ function getSeafileResponse(url, callback, postData = false) {
 
 module.exports = {
 	getRepos: function (callback) {
-		getSeafileResponse(`${Settings.SeafileApiHost}repos`, callback);
+		getSeafileResponse(`${Settings.SeafileHost}api2/repos`, callback);
 	},
 
 	getRepoDir: function ({ repoId, dirName = '', parentDir = '' }, callback) {
 		if (dirName) {
 			const p = encodeURI(`${parentDir}${dirName}`);
-			getSeafileResponse(`${Settings.SeafileApiHost}repos/${repoId}/dir?p=${p}&with_thumbnail=true`, callback);
+			getSeafileResponse(`${Settings.SeafileHost}api2/repos/${repoId}/dir?p=${p}`, callback);
 		} else {
-			getSeafileResponse(`${Settings.SeafileApiHost}repos/${repoId}/dir?with_thumbnail=true`, callback);
+			getSeafileResponse(`${Settings.SeafileHost}api2/repos/${repoId}/dir`, callback);
 		}
 	},
 
@@ -60,21 +60,21 @@ module.exports = {
 	},
 
 	getRepoData: function ({ repoId }, callback) {
-		getSeafileResponse(`${Settings.SeafileApiHost}repos/${repoId}/`, callback);
+		getSeafileResponse(`${Settings.SeafileHost}api/v2.1/repos/${repoId}/`, callback);
 	},
 
 	applyPassword: function ({ repoId, password }, callback) {
 		getSeafileResponse(`${Settings.SeafileHost}api2/repos/${repoId}/`, callback, { password });
 	},
 
-	saveSeafilesAsTempfiles: function ({ repoId, files }, callback) {
+	saveSeafilesAsTempfiles: function ({ repoId, parentDir, files }, callback) {
 		const parameters = {
 			Headers: authorizationHeaders,
 			Files: files.map(file => {
 				return {
 					Name: file.name,
 					Hash: file.id,
-					Link: `${Settings.SeafileHost}api2/repos/${repoId}/file/?p=${file.parent_dir}${file.name}`
+					Link: `${Settings.SeafileHost}api2/repos/${repoId}/file/?p=${parentDir}${file.name}`
 				};
 			})
 		};

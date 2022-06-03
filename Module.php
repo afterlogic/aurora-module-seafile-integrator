@@ -46,7 +46,6 @@ class Module extends \Aurora\System\Module\AbstractModule
 		$oSettings = $this->GetModuleSettings();
 		return [
 			'SeafileHost' => $oSettings->GetValue('SeafileHost', ''),
-			'SeafileApiHost' => $oSettings->GetValue('SeafileApiHost', ''),
 		];
 	}
 
@@ -71,7 +70,7 @@ class Module extends \Aurora\System\Module\AbstractModule
 				]);
 			} catch (\Exception $e) {
 				$response = $e->getResponse();
-				return $response->getBody()->getContents();
+				return $response ? $response->getBody()->getContents() : '{"error_msg": "' . $e->getMessage() . '"}';
 			}
 		} else {
 			try {
@@ -80,7 +79,7 @@ class Module extends \Aurora\System\Module\AbstractModule
 				]);
 			} catch (\Exception $e) {
 				$response = $e->getResponse();
-				return $response->getBody()->getContents();
+				return $response ? $response->getBody()->getContents() : '{"error_msg": "' . $e->getMessage() . '"}';
 			}
 		}
 		if ($res->getStatusCode() === 200 || $res->getStatusCode() === 201) {

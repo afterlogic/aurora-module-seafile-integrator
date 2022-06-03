@@ -47,12 +47,12 @@ function CSelectFilesPopup()
 	this.storages = [
 		{
 			label: TextUtils.i18n('%MODULENAME%/LABEL_MINE_STORAGE'),
-			name: 'mine',
+			name: 'repo',
 			iconCssClass: 'typepersonal'
 		},
 		{
 			label: TextUtils.i18n('%MODULENAME%/LABEL_SHARED_STORAGE'),
-			name: 'shared',
+			name: 'srepo',
 			iconCssClass: 'typeshared'
 		}
 	];
@@ -60,7 +60,7 @@ function CSelectFilesPopup()
 		if (this.selectFilesMode()) {
 			return this.storages;
 		}
-		return this.storages.filter(storage => storage.name === 'mine');
+		return this.storages.filter(storage => storage.name === 'repo');
 	}, this);
 	this.selectedStorage = ko.observable('');
 	this.selectedStorageLabel = ko.computed(function () {
@@ -74,8 +74,8 @@ function CSelectFilesPopup()
 	this.currentRepos = ko.observableArray([]);
 	this.selectedRepoId = ko.observable('');
 	this.selectedRepoName = ko.computed(function () {
-		const repo = this.currentRepos().find(repo => repo.repo_id === this.selectedRepoId());
-		return repo && repo.repo_name || '';
+		const repo = this.currentRepos().find(repo => repo.id === this.selectedRepoId());
+		return repo && repo.name || '';
 	}, this);
 
 	this.loadingRepoDir = ko.observable(false);
@@ -133,15 +133,14 @@ CSelectFilesPopup.prototype.onOpen = function ({ selectFilesMode, callback })
 	this.loadingRepos(true);
 	SeafileApi.getRepos((parsedResult, request) => {
 		this.loadingRepos(false);
-		let allRepos = parsedResult && parsedResult.repos;
-		if (Array.isArray(allRepos)) {
-			allRepos = allRepos.map(repo => {
+		if (Array.isArray(parsedResult)) {
+			const allRepos = parsedResult.map(repo => {
 				repo.checked = ko.observable(false);
 				repo.selected = ko.observable(false);
 				return repo;
 			});
-			this.mineRepos = allRepos.filter(repo => repo.type === 'mine');
-			this.sharedRepos = allRepos.filter(repo => repo.type === 'shared');
+			this.mineRepos = allRepos.filter(repo => repo.type === 'repo');
+			this.sharedRepos = allRepos.filter(repo => repo.type === 'srepo');
 			this.populateCurrentRepos();
 		}
 	});
@@ -170,7 +169,7 @@ CSelectFilesPopup.prototype.showRepo = function (repoId)
 		return;
 	}
 
-	const repo = this.currentRepos().find(repo => repo.repo_id === repoId);
+	const repo = this.currentRepos().find(repo => repo.id === repoId);
 	if (repo.encrypted) {
 		const parameters = {
 			repoId
@@ -211,11 +210,11 @@ CSelectFilesPopup.prototype.getRepoDir = function ()
 		parentDir: this.currentParentDir()
 	};
 	SeafileApi.getRepoDir(parameters, (parsedResult, request) => {
-		let list = parsedResult && parsedResult.dirent_list;
-		if (Array.isArray(list)) {
+		if (Array.isArray(parsedResult)) {
 			this.loadingRepoDir(false);
-			
-			list = list.map(item => {
+
+			const list = parsedResult.map(item => {
+				item.parent_dir = item.parent_dir || '/';
 				item.checked = ko.observable(false);
 				item.selected = ko.observable(false);
 				return item;
@@ -251,9 +250,9 @@ CSelectFilesPopup.prototype.showParentDir = function (index, dirName)
 CSelectFilesPopup.prototype.populateCurrentRepos = function ()
 {
 	let currentRepos = [];
-	if (this.selectedStorage() === 'mine') {
+	if (this.selectedStorage() === 'repo') {
 		currentRepos = this.mineRepos;
-	} else if (this.selectedStorage() === 'shared') {
+	} else if (this.selectedStorage() === 'srepo') {
 		currentRepos = this.sharedRepos;
 	}
 	this.currentRepos(currentRepos);
@@ -262,7 +261,7 @@ CSelectFilesPopup.prototype.populateCurrentRepos = function ()
 CSelectFilesPopup.prototype.selectFiles = function ()
 {
 	if (_.isFunction(this.callback)) {
-		this.callback(this.selectedRepoId(), this.selector.listCheckedAndSelected());
+		this.callback(this.selectedRepoId(), `${this.currentParentDir()}${this.currentDirName()}/` , this.selector.listCheckedAndSelected());
 	}
 
 	this.closePopup();

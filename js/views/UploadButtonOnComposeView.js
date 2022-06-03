@@ -39,7 +39,7 @@ CUploadButtonOnComposeView.prototype.openSeafilePopup = function()
 	Popups.showPopup(SelectFilesPopup, [popupParams]);
 };
 
-CUploadButtonOnComposeView.prototype.uploadSeafiles = function(repoId, files)
+CUploadButtonOnComposeView.prototype.uploadSeafiles = function(repoId, parentDir, files)
 {
 	if (!_.isFunction(this.composeOnFilesUpload) || !_.isFunction(this.koComposeSenderAccountId) ||
 		!_.isFunction(this.composeAddUploadingAttachments)
@@ -47,7 +47,7 @@ CUploadButtonOnComposeView.prototype.uploadSeafiles = function(repoId, files)
 		return;
 	}
 
-	const parameters = { repoId, files };
+	const parameters = { repoId, parentDir, files };
 	SeafileApi.saveSeafilesAsTempfiles(parameters, (response, request) => {
 		this.composeOnFilesUpload(response, request);
 	});
