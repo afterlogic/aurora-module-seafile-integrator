@@ -33,10 +33,6 @@ class Module extends \Aurora\System\Module\AbstractModule
 		if (!empty($token)) {
 			setcookie('seahub_token', $token);
 		}
-		$sessionid = $oSettings->GetValue('SessionId', '');
-		if (!empty($sessionid)) {
-			setcookie('sessionid', $sessionid);
-		}
 	}
 
 	/**
@@ -96,7 +92,6 @@ class Module extends \Aurora\System\Module\AbstractModule
 
 	public function SaveAttachmentsToSeafile($UserId, $AccountID, $Attachments, $UploadLink, $Headers, $ParentDir = '/')
 	{
-		$result = false;
 		$mailModuleDecorator = \Aurora\Modules\Mail\Module::Decorator();
 		if (!$mailModuleDecorator) {
 			return false;
@@ -108,7 +103,6 @@ class Module extends \Aurora\System\Module\AbstractModule
 		}
 
 		$userUUID = \Aurora\System\Api::getUserUUIDById($UserId);
-		$res = false;
 		foreach ($tempFiles as $tempName => $encodedData) {
 			$data = \Aurora\System\Api::DecodeKeyValues($encodedData);
 			if (!is_array($data) || !isset($data['FileName'])) {
@@ -139,11 +133,20 @@ class Module extends \Aurora\System\Module\AbstractModule
 			'multipart' => $multipart,
 		]);
 
-		if ($res->getStatusCode() === 200) {
-			$result = true;
-		}
+		return $res->getStatusCode() === 200;
+	}
 
-		return $result;
+	protected function getDownloadLink($link, $headers)
+	{
+		$client = new Client();
+		$res = $client->get($link, [
+			'headers' => $headers
+		]);
+		if ($res->getStatusCode() === 200) {
+			$resource = $res->getBody();
+			return trim($resource->read($resource->getSize()), '"');
+		}
+		return '';
 	}
 
 	public function SaveSeafilesAsTempfiles($UserId, $Files, $Headers)
@@ -161,12 +164,15 @@ class Module extends \Aurora\System\Module\AbstractModule
 		foreach ($Files as $file) {
 			$fileName = $file['Name'];
 			$fileHash = $file['Hash'];
-			$downloadLink = $file['Link'];
+
+			$downloadLink = $this->getDownloadLink($file['Link'], $Headers);
+			if (empty($downloadLink)) {
+				continue;
+			}
 
 			$res = $client->get($downloadLink, [
 				'headers' => $Headers
 			]);
-
 			$fileResource = null;
 			$size = 0;
 			if ($res->getStatusCode() === 200) {

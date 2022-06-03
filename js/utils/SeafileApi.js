@@ -13,11 +13,6 @@ const
 
 	Settings = require('modules/%ModuleName%/js/Settings.js'),
 
-	sessionid = $.cookie('sessionid'),
-	cookieHeaders = {
-		'Cookie': `sessionid=${sessionid}`
-	},
-
 	token = $.cookie('seahub_token'),
 	authorizationHeaders = {
 		'Authorization': `Token ${token}`
@@ -74,15 +69,16 @@ module.exports = {
 
 	saveSeafilesAsTempfiles: function ({ repoId, files }, callback) {
 		const parameters = {
-			Headers: cookieHeaders,
+			Headers: authorizationHeaders,
 			Files: files.map(file => {
 				return {
 					Name: file.name,
 					Hash: file.id,
-					Link: `${Settings.SeafileHost}lib/${repoId}/file${file.parent_dir}${file.name}?dl=1`
+					Link: `${Settings.SeafileHost}api2/repos/${repoId}/file/?p=${file.parent_dir}${file.name}`
 				};
 			})
 		};
+		// {{Host}}api2/repos/{{MineRepoId}}/file/?p={{FileParentDir}}{{FileName}}
 		Ajax.send('%ModuleName%', 'SaveSeafilesAsTempfiles', parameters, (response, request, status) => {
 			callback(response, request);
 		});
