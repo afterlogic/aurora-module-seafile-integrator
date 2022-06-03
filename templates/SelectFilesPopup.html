@@ -24,9 +24,9 @@
 			<span class="button" data-bind="i18n: {'key': 'COREWEBCLIENT/ACTION_SELECT'},
 				  visible: selectFilesMode, click: selectFiles"
 			></span>
-<!--			<span class="button" data-bind="i18n: {'key': '%MODULENAME%/ACTION_CREATE_FOLDER'},
-				  visible: !selectFilesMode(), click: createFolder"
-			></span>-->
+			<span class="button" data-bind="i18n: {'key': '%MODULENAME%/ACTION_CREATE_FOLDER'},
+				  visible: !selectFilesMode() && selectedRepoId(), click: createFolder"
+			></span>
 			<span class="button" data-bind="i18n: {'key': 'COREWEBCLIENT/ACTION_SAVE'},
 				  visible: !selectFilesMode(), command: saveAttachmentsCommand"
 			></span>

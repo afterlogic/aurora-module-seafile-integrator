@@ -26,9 +26,10 @@ function CCreateFolderPopup()
 
 	this.repoId = '';
 	this.parentDir = ko.observable('');
+	this.parentDirPath = ko.observable('');
 	this.dirName = ko.observable('');
 	this.dirNameFocus = ko.observable(false);
-	
+
 	this.callback = null;
 }
 
@@ -37,14 +38,18 @@ _.extendOwn(CCreateFolderPopup.prototype, CAbstractPopup.prototype);
 CCreateFolderPopup.prototype.PopupTemplate = '%ModuleName%_CreateFolderPopup';
 
 /**
+ * @param {string} repoId
+ * @param {string} repoName
  * @param {string} parentDir
  * @param {function} callback
  */
-CCreateFolderPopup.prototype.onOpen = function (repoId, parentDir, callback)
+CCreateFolderPopup.prototype.onOpen = function (repoId, repoName, parentDir, callback)
 {
 	this.callback = callback;
 	this.repoId = repoId;
 	this.parentDir(parentDir);
+	const parentDirPath = repoName + parentDir;
+	this.parentDirPath(parentDirPath.replace(/\/$/, ''));
 	this.dirName('');
 	this.dirNameFocus(true);
 };
@@ -59,7 +64,10 @@ CCreateFolderPopup.prototype.create = function ()
 	this.isCreating(true);
 	SeafileApi.createDir(parameters, (parsedResult, request) => {
 		this.isCreating(false);
-		console.log({ parsedResult, request });
+		if (_.isFunction(this.callback)) {
+			this.callback(this.dirName());
+		}
+		this.closePopup();
 	});
 };
 

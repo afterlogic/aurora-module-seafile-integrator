@@ -17,11 +17,18 @@ module.exports = {
 	 */
 	init: function (appData)
 	{
-		const moduleData = appData['%ModuleName%'];
-
-		if (!_.isEmpty(moduleData)) {
-			this.SeafileHost = Types.pString(moduleData.SeafileHost);
-			this.SeafileApiHost = Types.pString(moduleData.SeafileApiHost);
+		let
+			moduleData = appData['%ModuleName%'],
+			seafileHost = Types.pString(moduleData && moduleData.SeafileHost),
+			seafileApiHost = Types.pString(moduleData && moduleData.SeafileApiHost)
+		;
+		if (seafileHost.slice(-1) !== '/') {
+			seafileHost += '/';
 		}
+		if (seafileApiHost.slice(-1) !== '/') {
+			seafileApiHost += '/';
+		}
+		this.SeafileHost = seafileHost;
+		this.SeafileApiHost = seafileApiHost;
 	}
 };

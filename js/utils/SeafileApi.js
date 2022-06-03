@@ -24,11 +24,14 @@ const
 	}
 ;
 
-function getSeafileResponse(url, callback) {
+function getSeafileResponse(url, callback, postData = false) {
 	const parameters = {
 		Url: url,
 		Headers: authorizationHeaders
 	};
+	if (postData) {
+		parameters.PostData = postData;
+	}
 	Ajax.send('%ModuleName%', 'GetSeafileResponse', parameters, (response, request, status) => {
 		const
 			result = status === 200 && response && response.Result,
@@ -57,7 +60,7 @@ module.exports = {
 
 	createDir: function ({ repoId, dirName, parentDir }, callback) {
 		const p = encodeURI(`${parentDir}${dirName}`);
-		getSeafileResponse(`${Settings.SeafileHost}api2/repos/${repoId}/dir?p=${p}`, callback);
+		getSeafileResponse(`${Settings.SeafileHost}api2/repos/${repoId}/dir/?p=${p}`, callback, { operation: 'mkdir' });
 	},
 
 	saveSeafilesAsTempfiles: function ({ repoId, files }, callback) {

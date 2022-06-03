@@ -48,16 +48,32 @@ class Module extends \Aurora\System\Module\AbstractModule
 		];
 	}
 
-	public function GetSeafileResponse($Url, $Headers)
+	public function GetSeafileResponse($Url, $Headers, $PostData = false)
 	{
 		\Aurora\System\Api::checkUserRoleIsAtLeast(\Aurora\System\Enums\UserRole::NormalUser);
 
 		$client = new Client();
 
-		$res = $client->get($Url, [
-			'headers' => $Headers
-		]);
-		if ($res->getStatusCode() === 200) {
+		if (is_array($PostData)) {
+			$multipart = [];
+			foreach ($PostData as $key => $value) {
+				$multipart[] = [
+					'name' => $key,
+					'contents' => $value,
+				];
+			}
+			$res = $client->post($Url, [
+				'headers' => $Headers,
+				'multipart' => $multipart,
+			]);
+			$isStatusSuccess = $res->getStatusCode() === 201;
+		} else {
+			$res = $client->get($Url, [
+				'headers' => $Headers,
+			]);
+			$isStatusSuccess = $res->getStatusCode() === 200;
+		}
+		if ($isStatusSuccess) {
 			$resource = $res->getBody();
 			return $resource->read($resource->getSize());
 		}

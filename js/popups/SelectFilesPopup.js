@@ -164,25 +164,27 @@ CSelectFilesPopup.prototype.showRepo = function (repoId)
 		return;
 	}
 
+	this.currentDirName('');
+	this.currentParentDir('');
 	this.getRepoDir();
 };
 
 CSelectFilesPopup.prototype.showDir = function (dirName, parentDir)
 {
-	this.getRepoDir(dirName, parentDir);
-};
-
-CSelectFilesPopup.prototype.getRepoDir = function (dirName = '', parentDir = '')
-{
 	this.currentDirName(dirName);
 	this.currentParentDir(parentDir);
+	this.getRepoDir();
+};
+
+CSelectFilesPopup.prototype.getRepoDir = function ()
+{
 	this.folders([]);
 	this.files([]);
 	this.loadingRepoDir(true);
 	const parameters = {
 		repoId: this.selectedRepoId(),
-		dirName,
-		parentDir
+		dirName: this.currentDirName(),
+		parentDir: this.currentParentDir()
 	};
 	SeafileApi.getRepoDir(parameters, (parsedResult, request) => {
 		const allDirs = parsedResult && parsedResult.dirent_list;
@@ -239,8 +241,14 @@ CSelectFilesPopup.prototype.selectFiles = function ()
 
 CSelectFilesPopup.prototype.createFolder = function ()
 {
-	const callback = function () {};
-	Popups.showPopup(CreateFolderPopup, [this.selectedRepoId(), this.currentParentDir(), callback]);
+	const
+		parentDir = `${this.currentParentDir()}${this.currentDirName()}/`,
+		callback = (newDirName) => {
+//			this.currentDirName(newDirName);
+//			this.currentParentDir(parentDir);
+			this.getRepoDir();
+		};
+	Popups.showPopup(CreateFolderPopup, [this.selectedRepoId(), this.selectedRepoName(), parentDir, callback]);
 };
 
 CSelectFilesPopup.prototype.saveAttachments = function ()
