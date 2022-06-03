@@ -64,8 +64,9 @@ class Module extends \Aurora\System\Module\AbstractModule
 		return '';
 	}
 
-	public function SaveAttachmentsToSeafile($UserId, $AccountID, $Attachments, $UploadLink, $Headers)
+	public function SaveAttachmentsToSeafile($UserId, $AccountID, $Attachments, $UploadLink, $Headers, $ParentDir = '/')
 	{
+		$result = false;
 		$mailModuleDecorator = \Aurora\Modules\Mail\Module::Decorator();
 		if (!$mailModuleDecorator) {
 			return false;
@@ -91,16 +92,28 @@ class Module extends \Aurora\System\Module\AbstractModule
 				continue;
 			}
 
-			$client = new Client();
-			$body = [];
-			$body[$fileName] = $resource;
-			$res = $client->post($UploadLink, [
-				'headers' => $Headers,
-				'form_params' => $body,
-			]);
+			$multipart[] = [
+				'headers' => ['Content-Type' => 'application/octet-stream'],
+				'name' => 'file',
+				'contents' => $resource,
+				'filename' => $fileName,
+			];
+		}
+		$multipart[] = [
+			'name' => 'parent_dir',
+			'contents' => $ParentDir,
+		];
+		$client = new Client();
+		$res = $client->post($UploadLink, [
+			'headers' => $Headers,
+			'multipart' => $multipart,
+		]);
+
+		if ($res->getStatusCode() === 200) {
+			$result = true;
 		}
 
-		return $res;
+		return $result;
 	}
 
 	public function SaveSeafilesAsTempfiles($UserId, $Files, $Headers)
