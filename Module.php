@@ -28,11 +28,6 @@ class Module extends \Aurora\System\Module\AbstractModule
 	 */
 	public function init()
 	{
-		$oSettings = $this->GetModuleSettings();
-		$token = $oSettings->GetValue('Token', '');
-		if (!empty($token)) {
-			setcookie('seahub_token', $token);
-		}
 	}
 
 	/**

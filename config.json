@@ -6,9 +6,5 @@
 	"SeafileHost": [
 		"",
 		"string"
-	],
-	"Token": [
-		"",
-		"string"
 	]
 }
