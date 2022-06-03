@@ -8,6 +8,7 @@ const
 
 module.exports = {
 	SeafileHost: '',
+	SeahubToken: $.cookie('seahub_token'),
 
 	/**
 	 * Initializes settings from AppData object sections.
@@ -20,7 +21,7 @@ module.exports = {
 			moduleData = appData['%ModuleName%'],
 			seafileHost = Types.pString(moduleData && moduleData.SeafileHost)
 		;
-		if (seafileHost.slice(-1) !== '/') {
+		if (seafileHost !== '' && seafileHost.slice(-1) !== '/') {
 			seafileHost += '/';
 		}
 		this.SeafileHost = seafileHost;

@@ -9,7 +9,8 @@ module.exports = function (oAppData) {
 
 	Settings.init(oAppData);
 
-	if (App.isUserNormalOrTenant()) {
+	const seafileAllowed = !!(App.isUserNormalOrTenant() && Settings.SeafileHost && Settings.SeahubToken);
+	if (seafileAllowed) {
 		return {
 			start: function (ModulesManager) {
 				ModulesManager.run('MailWebclient', 'registerComposeUploadAttachmentsController',

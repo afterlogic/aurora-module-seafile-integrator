@@ -13,9 +13,8 @@ const
 
 	Settings = require('modules/%ModuleName%/js/Settings.js'),
 
-	token = $.cookie('seahub_token'),
 	authorizationHeaders = {
-		'Authorization': `Token ${token}`
+		'Authorization': `Token ${Settings.SeahubToken}`
 	}
 ;
 
