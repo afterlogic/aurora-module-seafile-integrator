@@ -2,13 +2,9 @@
 
 const
 	_ = require('underscore'),
-	$ = require('jquery'),
 	ko = require('knockout'),
 
-	TextUtils = require('%PathToCoreWebclientModule%/js/utils/Text.js'),
 	Utils = require('%PathToCoreWebclientModule%/js/utils/Common.js'),
-
-	Api = require('%PathToCoreWebclientModule%/js/Api.js'),
 
 	CAbstractPopup = require('%PathToCoreWebclientModule%/js/popups/CAbstractPopup.js'),
 
