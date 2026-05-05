@@ -61,7 +61,7 @@ class Module extends \Aurora\System\Module\AbstractModule
                     'headers' => $Headers,
                     'multipart' => $multipart,
                 ]);
-            } catch (\Exception $e) {
+            } catch (\GuzzleHttp\Exception\RequestException $e) {
                 $response = $e->getResponse();
                 return $response ? $response->getBody()->getContents() : '{"error_msg": "' . $e->getMessage() . '"}';
             }
@@ -70,7 +70,7 @@ class Module extends \Aurora\System\Module\AbstractModule
                 $res = $client->get($Url, [
                     'headers' => $Headers,
                 ]);
-            } catch (\Exception $e) {
+            } catch (\GuzzleHttp\Exception\RequestException $e) {
                 $response = $e->getResponse();
                 return $response ? $response->getBody()->getContents() : '{"error_msg": "' . $e->getMessage() . '"}';
             }
